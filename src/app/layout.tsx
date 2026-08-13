@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Outfit } from "next/font/google";
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const display = Bebas_Neue({
@@ -14,17 +15,25 @@ const sans = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "TABATA + VIDEO",
-  description:
-    "Timer de intervalos que reproduce tus videos de YouTube en loop con cuenta regresiva superpuesta.",
-  applicationName: "TABATA + VIDEO",
+  title: {
+    default: `${BRAND.name} — ${BRAND.tagline}`,
+    template: `%s · ${BRAND.name}`,
+  },
+  description: BRAND.description,
+  applicationName: BRAND.name,
   formatDetection: {
     telephone: false,
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "TABATA + VIDEO",
+    title: BRAND.name,
+  },
+  openGraph: {
+    title: BRAND.name,
+    description: BRAND.description,
+    locale: "es_AR",
+    type: "website",
   },
 };
 

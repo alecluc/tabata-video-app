@@ -6,6 +6,8 @@ import type { Routine } from "@/lib/types";
 import { formatClock, totalDurationSec } from "@/lib/types";
 import { deleteRoutine, loadRoutines } from "@/lib/storage";
 import { extractYoutubeId, youtubeThumb } from "@/lib/youtube";
+import { BRAND } from "@/lib/brand";
+import { BrandMark } from "./BrandMark";
 
 export function RoutineList() {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -27,12 +29,9 @@ export function RoutineList() {
   return (
     <div className={routines.length > 0 ? "home has-routines" : "home"}>
       <section className="home-hero">
-        <p className="brand">TABATA + VIDEO</p>
-        <h1>Un timer que reproduce tus videos.</h1>
-        <p className="lede">
-          Cada intervalo con su reel en loop, cuenta regresiva encima, y salto automático al
-          siguiente ejercicio.
-        </p>
+        <BrandMark />
+        <h1>{BRAND.tagline}</h1>
+        <p className="lede">{BRAND.shortDescription}</p>
         <div className="hero-actions">
           <Link href="/routines/new" className="btn-primary">
             Crear rutina

@@ -13,14 +13,12 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          gap: 12,
           background: "#0b0f0c",
-          color: "#c8f542",
-          fontSize: 86,
-          fontWeight: 700,
-          letterSpacing: -4,
         }}
       >
-        T+
+        <div style={{ width: 32, height: 100, background: "#c8f542" }} />
+        <div style={{ width: 32, height: 100, background: "#c8f542", opacity: 0.28 }} />
       </div>
     ),
     { ...size },

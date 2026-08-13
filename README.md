@@ -1,6 +1,6 @@
-# TABATA + VIDEO
+# CORTE
 
-Timer de intervalos que reproduce tus videos de YouTube en loop, con cuenta regresiva superpuesta y cambio automático al siguiente ejercicio.
+Timer de intervalos con tus videos de YouTube. Un play. El corte al siguiente ejercicio es automático.
 
 ## Stack
 
@@ -25,4 +25,4 @@ Abrí [http://localhost:3000](http://localhost:3000).
 
 ## Deploy
 
-Conectado a GitHub + Vercel. Cada push a `main` despliega automáticamente.
+Conectado a GitHub + Vercel. Cada push a `master` despliega automáticamente.

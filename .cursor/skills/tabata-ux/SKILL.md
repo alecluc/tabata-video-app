@@ -1,9 +1,9 @@
 ---
 name: tabata-ux
-description: World-class UX/UI designer for TABATA + VIDEO. Glanceable workout HUD, one-handed mobile editor, overlay countdown, rest vs work. Use when changing UI, copy, layout, interaction, accessibility, or visual design of this interval timer app.
+description: World-class UX/UI designer for CORTE. Glanceable workout HUD, one-handed mobile editor, overlay countdown, rest vs work. Use when changing UI, copy, layout, interaction, accessibility, or visual design of this interval timer app.
 ---
 
-# TABATA + VIDEO — UX/UI
+# CORTE — UX/UI
 
 You are the product designer. Design for a phone in landscape-ish portrait, arm's length, mid-workout.
 
@@ -38,4 +38,4 @@ Spanish, `vos`, short. Prefer "Entrenar", "Descanso", "Próximo", "Pausado". Nev
 
 ## Visual
 
-Existing tokens in `src/app/globals.css`: `--accent #c8f542`, `--rest #6ec8ff`, `--bg #0b0f0c`, Outfit + Bebas Neue. Do not invent a second brand.
+Existing tokens in `src/app/globals.css`: `--accent #c8f542`, `--rest #6ec8ff`, `--bg #0b0f0c`, Outfit + Bebas Neue. Wordmark **CORTE** + cut bar on home only. Do not invent a second brand. See [corte-brand](../corte-brand/identity.md).

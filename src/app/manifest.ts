@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { BRAND } from "@/lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TABATA + VIDEO",
-    short_name: "Tabata",
-    description:
-      "Timer de intervalos que reproduce tus videos de YouTube en loop.",
+    name: BRAND.name,
+    short_name: BRAND.name,
+    description: BRAND.description,
     start_url: "/",
     display: "standalone",
     background_color: "#0b0f0c",
