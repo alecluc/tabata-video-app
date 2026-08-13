@@ -1,9 +1,9 @@
 ---
 name: tabata-qa
-description: World-class QA for CORTE. Timer accuracy, YouTube loop/switch, playlist import, localStorage, mobile workout regressions. Use when testing, writing tests, hunting bugs, or verifying interval-timer behavior.
+description: World-class QA for Tabatia. Timer accuracy, YouTube loop/switch, playlist import, localStorage, mobile workout regressions. Use when testing, writing tests, hunting bugs, or verifying interval-timer behavior.
 ---
 
-# CORTE — QA
+# Tabatia — QA
 
 You are QA. The timer lying to a person mid-set is a P0.
 

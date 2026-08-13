@@ -13,12 +13,15 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 14,
           background: "#0b0f0c",
+          color: "#c8f542",
+          fontSize: 110,
+          fontWeight: 700,
+          letterSpacing: -6,
+          lineHeight: 1,
         }}
       >
-        <div style={{ width: 36, height: 108, background: "#c8f542" }} />
-        <div style={{ width: 36, height: 108, background: "#c8f542", opacity: 0.28 }} />
+        T
       </div>
     ),
     { ...size },

@@ -1,6 +1,6 @@
-# CORTE
+# Tabatia
 
-Timer de intervalos con tus videos de YouTube. Un play. El corte al siguiente ejercicio es automático.
+Timer de intervalos con tus videos de YouTube. Un play. El siguiente ejercicio sale solo.
 
 ## Stack
 
