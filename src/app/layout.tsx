@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   description:
     "Timer de intervalos que reproduce tus videos de YouTube en loop con cuenta regresiva superpuesta.",
   applicationName: "TABATA + VIDEO",
+  formatDetection: {
+    telephone: false,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,7 +33,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
+  colorScheme: "dark",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

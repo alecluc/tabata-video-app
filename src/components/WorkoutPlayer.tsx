@@ -129,6 +129,16 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
 
   useEffect(() => {
     if (phase !== "running") return;
+    document.documentElement.classList.add("workout-lock");
+    document.body.classList.add("workout-lock");
+    return () => {
+      document.documentElement.classList.remove("workout-lock");
+      document.body.classList.remove("workout-lock");
+    };
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "running") return;
     const onUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
