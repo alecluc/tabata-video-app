@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsx --test src/lib/youtube.test.ts src/lib/timer.test.ts src/lib/routine.test.ts"
   },
   "dependencies": {
     "next": "16.3.0",

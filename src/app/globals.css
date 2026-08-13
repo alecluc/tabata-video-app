@@ -46,7 +46,9 @@ select {
 
 .btn-primary,
 .btn-ghost,
-.icon-btn {
+.icon-btn,
+.chip,
+.text-link {
   border: 0;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
@@ -54,8 +56,22 @@ select {
 
 .btn-primary:hover,
 .btn-ghost:hover,
-.icon-btn:hover {
+.icon-btn:hover,
+.chip:hover {
   transform: translateY(-1px);
+}
+
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible,
+.icon-btn:focus-visible,
+.chip:focus-visible,
+.icon-text:focus-visible,
+.text-link:focus-visible,
+.field input:focus-visible,
+.interval-name-input:focus-visible,
+.interval-top select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .btn-primary {
@@ -105,6 +121,15 @@ select {
   padding: 2rem 0 4rem;
 }
 
+.home.has-routines .home-hero {
+  min-height: auto;
+  padding: 1.25rem 0 1.5rem;
+}
+
+.home.has-routines .brand {
+  font-size: clamp(2.2rem, 8vw, 3.4rem);
+}
+
 .home-hero {
   min-height: min(72vh, 640px);
   display: flex;
@@ -143,10 +168,9 @@ select {
   line-height: 1.5;
 }
 
-.hero-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+.empty-state .hero-actions,
+.ready-screen .hero-actions {
+  justify-content: center;
 }
 
 .home-list {
@@ -250,11 +274,16 @@ select {
 }
 
 .editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin: -0.4rem 0 1.5rem;
+  padding: 0.75rem 0;
+  background: linear-gradient(180deg, var(--bg) 70%, transparent);
   flex-wrap: wrap;
 }
 
@@ -303,6 +332,33 @@ select {
   margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chip {
+  background: var(--bg-soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  min-height: 44px;
+}
+
+.chip.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+
+.field-ok {
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .playlist-options {
@@ -366,7 +422,7 @@ select {
 
 .interval-row {
   display: grid;
-  grid-template-columns: 36px 1fr;
+  grid-template-columns: 44px 1fr;
   gap: 0.5rem;
   background: rgba(20, 26, 22, 0.9);
   border: 1px solid var(--line);
@@ -383,13 +439,21 @@ select {
   box-shadow: inset 3px 0 0 var(--rest);
 }
 
-.drag-handle {
-  background: transparent;
-  border: 0;
+.reorder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+}
+
+.reorder .icon-text {
   color: var(--muted);
-  cursor: grab;
-  font-size: 1.1rem;
-  padding: 0.4rem 0;
+  min-width: 44px;
+  min-height: 36px;
+}
+
+.reorder .icon-text:disabled {
+  opacity: 0.25;
 }
 
 .interval-top {
@@ -607,6 +671,8 @@ select {
 .icon-btn {
   width: 3.4rem;
   height: 3.4rem;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -624,10 +690,54 @@ select {
   font-size: 1.15rem;
 }
 
-.icon-btn.mute {
-  position: absolute;
-  right: 1.25rem;
-  top: max(1rem, env(safe-area-inset-top));
+.next-up {
+  margin: 0.35rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.95rem;
+}
+
+.workout.is-paused .workout-veil {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.text-link {
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+}
+
+.ready-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(420px, 100%);
+  text-align: left;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ready-list li {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  gap: 0.55rem;
+  align-items: baseline;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(20, 26, 22, 0.7);
+  font-size: 0.92rem;
+}
+
+.ready-list span {
+  color: var(--muted);
+}
+
+.ready-list em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.8rem;
 }
 
 .workout-meta {
@@ -705,5 +815,18 @@ select {
 
   .interval-top select {
     grid-column: 1 / -1;
+  }
+
+  .hero-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

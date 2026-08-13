@@ -38,6 +38,7 @@ interface YouTubePlayerProps {
   videoId: string | null;
   playing: boolean;
   muted: boolean;
+  emptyLabel?: string;
   className?: string;
 }
 
@@ -46,7 +47,13 @@ interface YouTubePlayerProps {
  * Switches clips with loadVideoById and restarts them before they end
  * so the Tabata interval can outlast the video length.
  */
-export function YouTubePlayer({ videoId, playing, muted, className }: YouTubePlayerProps) {
+export function YouTubePlayer({
+  videoId,
+  playing,
+  muted,
+  emptyLabel = "Descanso",
+  className,
+}: YouTubePlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const readyRef = useRef(false);
@@ -202,7 +209,7 @@ export function YouTubePlayer({ videoId, playing, muted, className }: YouTubePla
       <div ref={hostRef} className="yt-host" aria-hidden={!videoId} />
       {!videoId ? (
         <div className="yt-empty">
-          <span>Descanso</span>
+          <span>{emptyLabel}</span>
         </div>
       ) : null}
     </div>

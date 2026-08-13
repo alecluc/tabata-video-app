@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Interval, IntervalKind, Routine } from "@/lib/types";
 import { createId, emptyInterval, formatClock, totalDurationSec } from "@/lib/types";
 import { deleteRoutine, getRoutine, upsertRoutine } from "@/lib/storage";
-import { extractYoutubeId, youtubeThumb } from "@/lib/youtube";
+import { extractPlaylistId, extractYoutubeId, youtubeThumb } from "@/lib/youtube";
 import { PlaylistImport } from "./PlaylistImport";
 
 interface RoutineEditorProps {
@@ -32,13 +32,9 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
     const now = new Date().toISOString();
     setRoutine({
       id: createId(),
-      name: "Movilidad de cadera",
+      name: "Nueva rutina",
       rounds: 1,
-      intervals: [
-        { ...emptyInterval("work"), name: "Ejercicio 1", durationSec: 20 },
-        emptyInterval("rest"),
-        { ...emptyInterval("work"), name: "Ejercicio 2", durationSec: 20 },
-      ],
+      intervals: [emptyInterval("work"), emptyInterval("rest")],
       createdAt: now,
       updatedAt: now,
     });
@@ -82,6 +78,18 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
         ? { ...r, intervals: r.intervals.filter((i) => i.id !== id) }
         : r,
     );
+  }
+
+  function moveInterval(index: number, direction: -1 | 1) {
+    setRoutine((r) => {
+      if (!r) return r;
+      const target = index + direction;
+      if (target < 0 || target >= r.intervals.length) return r;
+      const next = [...r.intervals];
+      const [item] = next.splice(index, 1);
+      next.splice(target, 0, item);
+      return { ...r, intervals: next };
+    });
   }
 
   function onDrop(targetIndex: number) {
@@ -211,9 +219,26 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => onDrop(index)}
             >
-              <button type="button" className="drag-handle" aria-label="Reordenar" title="Arrastrar">
-                ⋮⋮
-              </button>
+              <div className="reorder">
+                <button
+                  type="button"
+                  className="icon-text"
+                  aria-label="Subir"
+                  disabled={index === 0}
+                  onClick={() => moveInterval(index, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="icon-text"
+                  aria-label="Bajar"
+                  disabled={index === routine.intervals.length - 1}
+                  onClick={() => moveInterval(index, 1)}
+                >
+                  ↓
+                </button>
+              </div>
               <div className="interval-body">
                 <div className="interval-top">
                   <span className="interval-index">{index + 1}</span>
@@ -290,7 +315,11 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
                   </div>
                 ) : null}
                 {interval.kind === "work" && interval.youtubeUrl && !vid ? (
-                  <p className="field-error">No pude leer ese link de YouTube</p>
+                  extractPlaylistId(interval.youtubeUrl) ? (
+                    <p className="field-error">Eso es una playlist. Usá el importador de arriba.</p>
+                  ) : (
+                    <p className="field-error">No pude leer ese link de YouTube</p>
+                  )
                 ) : null}
               </div>
             </li>

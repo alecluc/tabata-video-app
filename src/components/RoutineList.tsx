@@ -25,7 +25,7 @@ export function RoutineList() {
   }
 
   return (
-    <div className="home">
+    <div className={routines.length > 0 ? "home has-routines" : "home"}>
       <section className="home-hero">
         <p className="brand">TABATA + VIDEO</p>
         <h1>Un timer que reproduce tus videos.</h1>
@@ -52,9 +52,14 @@ export function RoutineList() {
         {routines.length === 0 ? (
           <div className="empty-state">
             <p>Todavía no tenés rutinas guardadas.</p>
-            <Link href="/routines/new" className="btn-primary">
-              Armar la primera
-            </Link>
+            <div className="hero-actions">
+              <Link href="/routines/new" className="btn-primary">
+                Armar la primera
+              </Link>
+              <Link href="/routines/new#playlist" className="btn-ghost">
+                Pegar playlist
+              </Link>
+            </div>
           </div>
         ) : (
           <ul className="routine-cards">

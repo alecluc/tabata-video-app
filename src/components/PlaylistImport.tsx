@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import type { Interval } from "@/lib/types";
-import { emptyInterval } from "@/lib/types";
+import { buildPlaylistIntervals } from "@/lib/routine";
 import { extractPlaylistId } from "@/lib/youtube";
 
 interface PlaylistImportProps {
-  onImport: (payload: { title: string; intervals: Interval[] }) => void;
+  onImport: (payload: { title: string; intervals: Interval[]; videoCount: number }) => void;
 }
+
+const PRESETS = [
+  { label: "20/10", work: 20, rest: 10 },
+  { label: "30/10", work: 30, rest: 10 },
+  { label: "45/15", work: 45, rest: 15 },
+] as const;
 
 export function PlaylistImport({ onImport }: PlaylistImportProps) {
   const [url, setUrl] = useState("");
@@ -16,11 +22,19 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
   const [restSec, setRestSec] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const parsedId = extractPlaylistId(url);
 
+  function applyPreset(work: number, rest: number) {
+    setWorkSec(work);
+    setRestSec(rest);
+    setInsertRest(true);
+  }
+
   async function importPlaylist() {
     setError(null);
+    setSuccess(null);
     if (!parsedId) {
       setError("Pegá un link de playlist de YouTube");
       return;
@@ -38,26 +52,22 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
         throw new Error(data.error || "No pude leer esa playlist");
       }
 
-      const work = Math.max(5, Math.min(600, Number(workSec) || 20));
-      const rest = Math.max(5, Math.min(600, Number(restSec) || 10));
-      const intervals: Interval[] = [];
-
-      data.videos.forEach((video, index) => {
-        intervals.push({
-          ...emptyInterval("work"),
-          name: video.title,
-          durationSec: work,
-          youtubeUrl: `https://www.youtube.com/watch?v=${video.videoId}`,
-        });
-        if (insertRest && index < data.videos!.length - 1) {
-          intervals.push({
-            ...emptyInterval("rest"),
-            durationSec: rest,
-          });
-        }
+      const intervals = buildPlaylistIntervals(data.videos, {
+        workSec,
+        restSec,
+        insertRest,
       });
 
-      onImport({ title: data.title || "Playlist de YouTube", intervals });
+      onImport({
+        title: data.title || "Playlist de YouTube",
+        intervals,
+        videoCount: data.videos.length,
+      });
+      setSuccess(
+        `Listo: ${data.videos.length} video${data.videos.length === 1 ? "" : "s"}${
+          insertRest ? " con descanso entre medio" : ""
+        }.`,
+      );
       setUrl("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No pude importar la playlist");
@@ -80,11 +90,32 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
           onChange={(e) => {
             setUrl(e.target.value);
             setError(null);
+            setSuccess(null);
           }}
           placeholder="https://www.youtube.com/playlist?list=…"
           inputMode="url"
+          enterKeyHint="go"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void importPlaylist();
+            }
+          }}
         />
       </label>
+
+      <div className="preset-row" role="group" aria-label="Tiempos típicos">
+        {PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            className={`chip ${workSec === preset.work && restSec === preset.rest && insertRest ? "is-on" : ""}`}
+            onClick={() => applyPreset(preset.work, preset.rest)}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
 
       <div className="playlist-options">
         <label className="field compact">
@@ -120,6 +151,7 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
       </div>
 
       {error ? <p className="field-error">{error}</p> : null}
+      {success ? <p className="field-ok">{success}</p> : null}
       {url && !parsedId && !error ? (
         <p className="field-error">Ese link no parece una playlist</p>
       ) : null}
