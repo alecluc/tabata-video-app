@@ -38,4 +38,4 @@ Spanish, `vos`, short. Prefer "Entrenar", "Descanso", "Próximo", "Pausado". Nev
 
 ## Visual
 
-Existing tokens in `src/app/globals.css`: `--accent #c8f542`, `--rest #6ec8ff`, `--bg #0b0f0c`, Outfit + Bebas Neue. Wordmark **Tabatia** + accent bar on home only. Do not invent a second brand. See [tabatia-brand](../tabatia-brand/identity.md).
+Existing tokens in `src/app/globals.css`: `--accent #c8f542`, `--rest #6ec8ff`, `--bg #0b0f0c`, Sora + Barlow Condensed. Wordmark **Tabatia** + accent bar on home only. Do not invent a second brand. See [tabatia-brand](../tabatia-brand/identity.md).

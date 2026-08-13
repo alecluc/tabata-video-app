@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, Outfit } from "next/font/google";
+import { Barlow_Condensed, Sora } from "next/font/google";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
-const display = Bebas_Neue({
-  weight: "400",
+const display = Barlow_Condensed({
+  weight: ["600", "700", "800"],
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-tabatia-display",
 });
 
-const sans = Outfit({
+const sans = Sora({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-tabatia-ui",
 });
 
 export const metadata: Metadata = {

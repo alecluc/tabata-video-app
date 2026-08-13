@@ -23,8 +23,8 @@ Descartados: CORTE (nombre previo), TABATA + VIDEO (deck, no marca).
 - **Escenografía:** cuarto oscuro de ensayo, no spa wellness. Negro verde `#0b0f0c`.
 - **Trabajo:** lima `#c8f542` — play, urgencia de los últimos 3s.
 - **Descanso:** cian `#6ec8ff`.
-- **Tipo display:** Bebas Neue (title card, wordmark, crono).
-- **Tipo UI:** Outfit.
+- **Tipo display:** Barlow Condensed (wordmark, títulos, crono — números tabulares).
+- **Tipo UI:** Sora (botones, labels, editor).
 - **Marca gráfica:** barra lima vertical junto al wordmark. Ícono: **T** lima.
 
 ## Voz
