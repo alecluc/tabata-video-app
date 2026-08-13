@@ -34,12 +34,23 @@ declare namespace YT {
     data: number;
   }
 
+  interface VideoByIdArgs {
+    videoId: string;
+    startSeconds?: number;
+    endSeconds?: number;
+    suggestedQuality?: string;
+  }
+
   class Player {
     constructor(element: HTMLElement | string, options: PlayerOptions);
     playVideo(): void;
     pauseVideo(): void;
     stopVideo(): void;
     seekTo(seconds: number, allowSeekAhead: boolean): void;
+    loadVideoById(videoId: string | VideoByIdArgs): void;
+    cueVideoById(videoId: string | VideoByIdArgs): void;
+    getCurrentTime(): number;
+    getDuration(): number;
     mute(): void;
     unMute(): void;
     destroy(): void;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 declare global {
   interface Window {
@@ -41,27 +41,78 @@ interface YouTubePlayerProps {
   className?: string;
 }
 
+/**
+ * One persistent iframe for the whole workout.
+ * Switches clips with loadVideoById and restarts them before they end
+ * so the Tabata interval can outlast the video length.
+ */
 export function YouTubePlayer({ videoId, playing, muted, className }: YouTubePlayerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const readyRef = useRef(false);
-  const wantedIdRef = useRef(videoId);
+  const activeIdRef = useRef<string | null>(null);
   const playingRef = useRef(playing);
   const mutedRef = useRef(muted);
+  const videoIdRef = useRef(videoId);
+  const loopWatchRef = useRef<number | null>(null);
 
-  wantedIdRef.current = videoId;
   playingRef.current = playing;
   mutedRef.current = muted;
+  videoIdRef.current = videoId;
 
-  const destroy = useCallback(() => {
+  function clearLoopWatch() {
+    if (loopWatchRef.current !== null) {
+      window.clearInterval(loopWatchRef.current);
+      loopWatchRef.current = null;
+    }
+  }
+
+  function startLoopWatch(player: YTPlayer) {
+    clearLoopWatch();
+    loopWatchRef.current = window.setInterval(() => {
+      if (!playingRef.current || !videoIdRef.current) return;
+      try {
+        const duration = player.getDuration() || 0;
+        const current = player.getCurrentTime() || 0;
+        // Restart just before the end card so Shorts/reels keep looping
+        if (duration > 1 && current >= duration - 0.4) {
+          player.seekTo(0, true);
+          player.playVideo();
+        }
+      } catch {
+        /* noop */
+      }
+    }, 200);
+  }
+
+  function syncPlayer(player: YTPlayer) {
+    const wanted = videoIdRef.current;
     try {
-      playerRef.current?.destroy();
+      if (mutedRef.current) player.mute();
+      else player.unMute();
+
+      if (!wanted) {
+        player.pauseVideo();
+        activeIdRef.current = null;
+        clearLoopWatch();
+        return;
+      }
+
+      if (activeIdRef.current !== wanted) {
+        activeIdRef.current = wanted;
+        player.loadVideoById({ videoId: wanted, startSeconds: 0 });
+      }
+
+      if (playingRef.current) {
+        player.playVideo();
+        startLoopWatch(player);
+      } else {
+        player.pauseVideo();
+      }
     } catch {
       /* noop */
     }
-    playerRef.current = null;
-    readyRef.current = false;
-  }, []);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -70,18 +121,20 @@ export function YouTubePlayer({ videoId, playing, muted, className }: YouTubePla
       if (!hostRef.current) return;
       await loadYoutubeApi();
       if (cancelled || !hostRef.current || !window.YT?.Player) return;
+      if (playerRef.current) return;
 
-      destroy();
       const mountEl = document.createElement("div");
       hostRef.current.innerHTML = "";
       hostRef.current.appendChild(mountEl);
 
+      const initialId = videoIdRef.current || undefined;
+
       playerRef.current = new window.YT.Player(mountEl, {
         width: "100%",
         height: "100%",
-        videoId: videoId || undefined,
+        videoId: initialId,
         playerVars: {
-          autoplay: playing && videoId ? 1 : 0,
+          autoplay: 0,
           controls: 0,
           modestbranding: 1,
           rel: 0,
@@ -89,68 +142,69 @@ export function YouTubePlayer({ videoId, playing, muted, className }: YouTubePla
           fs: 0,
           disablekb: 1,
           iv_load_policy: 3,
+          loop: 1,
+          ...(initialId ? { playlist: initialId } : {}),
           origin: window.location.origin,
         },
         events: {
           onReady: (e) => {
             readyRef.current = true;
-            if (mutedRef.current) e.target.mute();
-            else e.target.unMute();
-            if (playingRef.current && wantedIdRef.current) e.target.playVideo();
-            else e.target.pauseVideo();
+            if (videoIdRef.current) activeIdRef.current = videoIdRef.current;
+            syncPlayer(e.target);
           },
           onStateChange: (e) => {
-            // Loop current interval video
-            if (e.data === window.YT!.PlayerState.ENDED) {
-              e.target.seekTo(0, true);
-              if (playingRef.current) e.target.playVideo();
+            if (
+              e.data === window.YT!.PlayerState.ENDED &&
+              playingRef.current &&
+              videoIdRef.current
+            ) {
+              try {
+                e.target.seekTo(0, true);
+                e.target.playVideo();
+              } catch {
+                /* noop */
+              }
             }
-          },
-          onError: () => {
-            // Keep UI usable if embed is blocked
+            if (e.data === window.YT!.PlayerState.PLAYING) {
+              startLoopWatch(e.target);
+            }
           },
         },
       });
     }
 
     void mount();
+
     return () => {
       cancelled = true;
-      destroy();
+      clearLoopWatch();
+      try {
+        playerRef.current?.destroy();
+      } catch {
+        /* noop */
+      }
+      playerRef.current = null;
+      readyRef.current = false;
+      activeIdRef.current = null;
     };
-    // Remount only when video identity changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId, destroy]);
+  }, []);
 
   useEffect(() => {
     const player = playerRef.current;
-    if (!player || !readyRef.current) return;
-    try {
-      if (playing && videoId) player.playVideo();
-      else player.pauseVideo();
-    } catch {
-      /* noop */
-    }
-  }, [playing, videoId]);
+    if (!readyRef.current || !player) return;
+    syncPlayer(player);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId, playing, muted]);
 
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!player || !readyRef.current) return;
-    try {
-      if (muted) player.mute();
-      else player.unMute();
-    } catch {
-      /* noop */
-    }
-  }, [muted]);
-
-  if (!videoId) {
-    return (
-      <div className={`yt-empty ${className ?? ""}`}>
-        <span>Descanso</span>
-      </div>
-    );
-  }
-
-  return <div ref={hostRef} className={`yt-host ${className ?? ""}`} />;
+  return (
+    <div className={`yt-shell ${className ?? ""} ${videoId ? "has-video" : "is-rest"}`}>
+      <div ref={hostRef} className="yt-host" aria-hidden={!videoId} />
+      {!videoId ? (
+        <div className="yt-empty">
+          <span>Descanso</span>
+        </div>
+      ) : null}
+    </div>
+  );
 }

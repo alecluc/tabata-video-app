@@ -431,6 +431,7 @@ select {
   overflow: hidden;
 }
 
+.yt-shell,
 .yt-host,
 .yt-empty,
 .workout-video {
@@ -438,6 +439,11 @@ select {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.yt-shell.is-rest .yt-host {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .yt-host iframe {
