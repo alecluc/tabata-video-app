@@ -7,6 +7,7 @@ import type { Interval, IntervalKind, Routine } from "@/lib/types";
 import { createId, emptyInterval, formatClock, totalDurationSec } from "@/lib/types";
 import { deleteRoutine, getRoutine, upsertRoutine } from "@/lib/storage";
 import { extractYoutubeId, youtubeThumb } from "@/lib/youtube";
+import { PlaylistImport } from "./PlaylistImport";
 
 interface RoutineEditorProps {
   routineId?: string;
@@ -174,6 +175,29 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
           {routine.intervals.length} intervalos · {formatClock(totalDurationSec(routine))} total
         </p>
       </div>
+
+      <PlaylistImport
+        onImport={({ title, intervals }) => {
+          const keepName =
+            routine.name.trim() &&
+            routine.name !== "Movilidad de cadera" &&
+            routine.name !== "Nueva rutina";
+          const hasCustomVideos = routine.intervals.some(
+            (i) => i.kind === "work" && i.youtubeUrl.trim(),
+          );
+          if (
+            hasCustomVideos &&
+            !window.confirm("Esto reemplaza los intervalos actuales por los de la playlist. ¿Seguir?")
+          ) {
+            return;
+          }
+          setRoutine({
+            ...routine,
+            name: keepName ? routine.name : title,
+            intervals,
+          });
+        }}
+      />
 
       <ul className="interval-list">
         {routine.intervals.map((interval, index) => {

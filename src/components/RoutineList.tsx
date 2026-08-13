@@ -37,6 +37,9 @@ export function RoutineList() {
           <Link href="/routines/new" className="btn-primary">
             Crear rutina
           </Link>
+          <Link href="/routines/new#playlist" className="btn-ghost">
+            Desde playlist
+          </Link>
         </div>
       </section>
 

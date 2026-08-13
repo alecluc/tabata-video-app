@@ -1,3 +1,26 @@
+const PLAYLIST_ID_RE = /^(PL|UU|FL|OL|RD|LL|WL)[\w-]{10,}$/;
+
+/** Extract a YouTube playlist id from a playlist/watch URL or a bare id. */
+export function extractPlaylistId(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (PLAYLIST_ID_RE.test(raw)) return raw;
+
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "youtu.be" || host.endsWith("youtube.com") || host === "m.youtube.com") {
+      const list = url.searchParams.get("list");
+      if (list && PLAYLIST_ID_RE.test(list)) return list;
+    }
+  } catch {
+    // not a URL
+  }
+
+  const match = raw.match(/[?&]list=((?:PL|UU|FL|OL|RD|LL|WL)[\w-]{10,})/);
+  return match?.[1] ?? null;
+}
+
 /** Extract a YouTube video id from common URL shapes or a bare id. */
 export function extractYoutubeId(input: string): string | null {
   const raw = input.trim();
