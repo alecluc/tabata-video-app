@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# android signing (never commit)
+android/keystore.properties
+*.jks
+*.keystore
+dist-android/
