@@ -32,7 +32,15 @@ export default function PrivacyPage() {
           Al importar una playlist, la app pide a YouTube la lista de videos. No usamos esa
           petición para identificarte.
         </p>
-        <p>No vendemos datos. No hay publicidad de terceros en la app.</p>
+        <p>
+          Durante los intervalos de descanso podemos mostrar publicidad de Google (AdSense en la web
+          y AdMob en Android). Google puede recopilar datos según su{" "}
+          <a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">
+            política de privacidad
+          </a>
+          . Los anuncios de YouTube durante el trabajo los gestiona YouTube, no Tabatia.
+        </p>
+        <p>No vendemos tus datos personales.</p>
         <p>Preguntas: el desarrollador de la app en Play Console / GitHub.</p>
       </div>
     </main>

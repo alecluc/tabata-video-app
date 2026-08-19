@@ -11,6 +11,7 @@ import { BrandMark } from "./BrandMark";
 import { AuthBar } from "./AuthBar";
 import { deleteRoutineSynced, syncRoutinesWithCloud } from "@/lib/routines-sync";
 import { loadRoutines } from "@/lib/storage";
+import { HomeAdSlot } from "./HomeAdSlot";
 
 export function RoutineList() {
   const { status } = useSession();
@@ -116,6 +117,7 @@ export function RoutineList() {
           </ul>
         )}
       </section>
+      <HomeAdSlot />
     </div>
   );
 }

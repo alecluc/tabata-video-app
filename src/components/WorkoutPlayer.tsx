@@ -8,7 +8,7 @@ import { flattenRoutine } from "@/lib/routine";
 import { beepSecond, progressRatio, remainingSec } from "@/lib/timer";
 import { extractYoutubeId } from "@/lib/youtube";
 import { playBeep, unlockAudio } from "@/lib/audio";
-import { RestAdOverlay } from "./RestAdOverlay";
+import { RestAdSlot } from "./RestAdSlot";
 import { YouTubePlayer } from "./YouTubePlayer";
 
 interface WorkoutPlayerProps {
@@ -303,7 +303,7 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
           emptyLabel={emptyLabel}
           className="workout-video"
         />
-        {interval.kind === "rest" ? <RestAdOverlay playing={!paused} /> : null}
+        {interval.kind === "rest" ? <RestAdSlot active={!paused} /> : null}
         <div className="workout-veil" />
         <div className="workout-hud">
           <div className="workout-top">

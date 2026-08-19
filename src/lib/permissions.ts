@@ -12,7 +12,7 @@ export const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS);
 export const PERMISSION_LABELS: Record<Permission, string> = {
   [PERMISSIONS.USERS_MANAGE]: "Gestionar usuarios y admins",
   [PERMISSIONS.ROUTINES_MANAGE_ALL]: "Ver y editar rutinas de todos",
-  [PERMISSIONS.ADS_MANAGE]: "Configurar publicidad en descanso",
+  [PERMISSIONS.ADS_MANAGE]: "Configurar AdSense y AdMob",
   [PERMISSIONS.SETTINGS_MANAGE]: "Ajustes de la app",
 };
 
