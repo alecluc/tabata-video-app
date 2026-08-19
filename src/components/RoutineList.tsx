@@ -2,32 +2,42 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import type { Routine } from "@/lib/types";
 import { formatClock, totalDurationSec } from "@/lib/types";
-import { deleteRoutine, loadRoutines } from "@/lib/storage";
 import { extractYoutubeId, youtubeThumb } from "@/lib/youtube";
 import { BRAND } from "@/lib/brand";
 import { BrandMark } from "./BrandMark";
+import { AuthBar } from "./AuthBar";
+import { deleteRoutineSynced, syncRoutinesWithCloud } from "@/lib/routines-sync";
+import { loadRoutines } from "@/lib/storage";
 
 export function RoutineList() {
+  const { status } = useSession();
   const [routines, setRoutines] = useState<Routine[]>([]);
+  const loggedIn = status === "authenticated";
 
   function refresh() {
     setRoutines(loadRoutines());
   }
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (status === "authenticated") {
+      void syncRoutinesWithCloud().then(setRoutines);
+      return;
+    }
+    if (status === "unauthenticated") refresh();
+  }, [status]);
 
-  function remove(id: string) {
+  async function remove(id: string) {
     if (!window.confirm("¿Borrar esta rutina?")) return;
-    deleteRoutine(id);
+    await deleteRoutineSynced(id, loggedIn);
     refresh();
   }
 
   return (
     <div className={routines.length > 0 ? "home has-routines" : "home"}>
+      <AuthBar />
       <section className="home-hero">
         <BrandMark />
         <h1>{BRAND.tagline}</h1>
@@ -94,7 +104,7 @@ export function RoutineList() {
                       <button
                         type="button"
                         className="btn-ghost sm danger"
-                        onClick={() => remove(routine.id)}
+                        onClick={() => void remove(routine.id)}
                       >
                         Borrar
                       </button>

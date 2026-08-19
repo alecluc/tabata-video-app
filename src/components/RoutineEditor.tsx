@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Interval, IntervalKind, Routine } from "@/lib/types";
 import { createId, emptyInterval, formatClock, totalDurationSec } from "@/lib/types";
-import { deleteRoutine, getRoutine, upsertRoutine } from "@/lib/storage";
+import { getRoutine } from "@/lib/storage";
+import { deleteRoutineSynced, upsertRoutineSynced } from "@/lib/routines-sync";
+import { useSession } from "next-auth/react";
 import { extractPlaylistId, extractYoutubeId, youtubeThumb } from "@/lib/youtube";
 import { PlaylistImport } from "./PlaylistImport";
 
@@ -15,6 +17,8 @@ interface RoutineEditorProps {
 
 export function RoutineEditor({ routineId }: RoutineEditorProps) {
   const router = useRouter();
+  const { status } = useSession();
+  const loggedIn = status === "authenticated";
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -122,7 +126,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
       })),
       updatedAt: new Date().toISOString(),
     };
-    upsertRoutine(cleaned);
+    void upsertRoutineSynced(cleaned, loggedIn);
     setRoutine(cleaned);
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 1200);
@@ -133,7 +137,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
   function remove() {
     if (!routineId) return;
     if (!window.confirm("¿Borrar esta rutina?")) return;
-    deleteRoutine(routineId);
+    void deleteRoutineSynced(routineId, loggedIn);
     router.push("/");
   }
 

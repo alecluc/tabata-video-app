@@ -16,16 +16,21 @@ export default function PrivacyPage() {
       </h1>
       <div className="lede" style={{ maxWidth: "62ch", display: "grid", gap: "0.9rem" }}>
         <p>
-          Tabatia guarda tus rutinas en el teléfono (almacenamiento local del navegador). No
-          creamos cuentas ni subimos tus rutinas a un servidor propio.
+          Podés entrenar sin cuenta: las rutinas quedan en el teléfono (almacenamiento local del
+          navegador).
+        </p>
+        <p>
+          Si te registrás (email o Google), guardamos tu cuenta y sincronizamos las rutinas en
+          nuestros servidores para que te sigan entre dispositivos. La contraseña se guarda
+          hasheada, no en texto plano.
         </p>
         <p>
           Para reproducir ejercicios usamos YouTube. Eso implica conexión a internet y que
           YouTube pueda procesar datos según su propia política.
         </p>
         <p>
-          Al importar una playlist, la app pide a YouTube la lista de videos. No guardamos esa
-          petición en una base de datos nuestra.
+          Al importar una playlist, la app pide a YouTube la lista de videos. No usamos esa
+          petición para identificarte.
         </p>
         <p>No vendemos datos. No hay publicidad de terceros en la app.</p>
         <p>Preguntas: el desarrollador de la app en Play Console / GitHub.</p>
