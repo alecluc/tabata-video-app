@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { SUPER_ADMIN_EMAIL } from "@/lib/permissions";
 import { dbEnabled, prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
       email,
       name: name || email.split("@")[0],
       passwordHash,
+      role: email === SUPER_ADMIN_EMAIL ? "SUPER_ADMIN" : "USER",
     },
   });
 

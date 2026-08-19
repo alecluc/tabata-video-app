@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" fill="none">
+  <rect width="1080" height="1920" fill="#0a1218"/>
+  <circle cx="540" cy="760" r="420" fill="url(#g)" opacity="0.35"/>
+  <defs>
+    <radialGradient id="g" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(540 760) rotate(90) scale(420)">
+      <stop stop-color="#6ec8ff"/>
+      <stop offset="1" stop-color="#6ec8ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <text x="540" y="980" text-anchor="middle" fill="#6ec8ff" font-family="system-ui,sans-serif" font-size="72" font-weight="700" letter-spacing="0.08em">TABATIA</text>
+  <text x="540" y="1080" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-family="system-ui,sans-serif" font-size="36" letter-spacing="0.04em">ESPACIO PUBLICITARIO</text>
+  <text x="540" y="1140" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-family="system-ui,sans-serif" font-size="28">Descanso · sin sonido</text>
+</svg>

@@ -5,6 +5,8 @@ import GitHub from "next-auth/providers/github";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
+import { ensureBootstrapSuperAdmin, loadUserAuthFields } from "@/lib/admin-auth";
+import type { UserRole } from "@/lib/permissions";
 import { dbEnabled, prisma } from "@/lib/prisma";
 
 const providers: NextAuthConfig["providers"] = [];
@@ -59,12 +61,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.id) token.id = user.id;
+      if (user?.id) {
+        token.id = user.id;
+        await ensureBootstrapSuperAdmin(user.id, user.email);
+      }
+
+      if (token.id) {
+        const authFields = await loadUserAuthFields(String(token.id));
+        token.role = authFields.role;
+        token.permissions = authFields.permissions;
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = String(token.id);
+        session.user.role = (token.role as UserRole | undefined) ?? "USER";
+        session.user.permissions = (token.permissions as string[] | undefined) ?? [];
       }
       return session;
     },
