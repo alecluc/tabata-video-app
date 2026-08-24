@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 declare global {
   interface Window {
@@ -34,6 +34,11 @@ function loadYoutubeApi(): Promise<void> {
   return apiPromise;
 }
 
+export interface YouTubePlayerHandle {
+  /** Seek within the loaded clip (0–1 of video duration). Does not affect interval timer. */
+  seekToFraction: (fraction: number) => void;
+}
+
 interface YouTubePlayerProps {
   videoId: string | null;
   playing: boolean;
@@ -47,171 +52,186 @@ interface YouTubePlayerProps {
  * Switches clips with loadVideoById and restarts them before they end
  * so the Tabata interval can outlast the video length.
  */
-export function YouTubePlayer({
-  videoId,
-  playing,
-  muted,
-  emptyLabel = "Descanso",
-  className,
-}: YouTubePlayerProps) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<YTPlayer | null>(null);
-  const readyRef = useRef(false);
-  const activeIdRef = useRef<string | null>(null);
-  const playingRef = useRef(playing);
-  const mutedRef = useRef(muted);
-  const videoIdRef = useRef(videoId);
-  const loopWatchRef = useRef<number | null>(null);
+export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
+  function YouTubePlayer(
+    { videoId, playing, muted, emptyLabel = "Descanso", className },
+    ref,
+  ) {
+    const hostRef = useRef<HTMLDivElement>(null);
+    const playerRef = useRef<YTPlayer | null>(null);
+    const readyRef = useRef(false);
+    const activeIdRef = useRef<string | null>(null);
+    const playingRef = useRef(playing);
+    const mutedRef = useRef(muted);
+    const videoIdRef = useRef(videoId);
+    const loopWatchRef = useRef<number | null>(null);
 
-  playingRef.current = playing;
-  mutedRef.current = muted;
-  videoIdRef.current = videoId;
+    playingRef.current = playing;
+    mutedRef.current = muted;
+    videoIdRef.current = videoId;
 
-  function clearLoopWatch() {
-    if (loopWatchRef.current !== null) {
-      window.clearInterval(loopWatchRef.current);
-      loopWatchRef.current = null;
+    function clearLoopWatch() {
+      if (loopWatchRef.current !== null) {
+        window.clearInterval(loopWatchRef.current);
+        loopWatchRef.current = null;
+      }
     }
-  }
 
-  function startLoopWatch(player: YTPlayer) {
-    clearLoopWatch();
-    loopWatchRef.current = window.setInterval(() => {
-      if (!playingRef.current || !videoIdRef.current) return;
+    function startLoopWatch(player: YTPlayer) {
+      clearLoopWatch();
+      loopWatchRef.current = window.setInterval(() => {
+        if (!playingRef.current || !videoIdRef.current) return;
+        try {
+          const duration = player.getDuration() || 0;
+          const current = player.getCurrentTime() || 0;
+          // Restart just before the end card so Shorts/reels keep looping
+          if (duration > 1 && current >= duration - 0.4) {
+            player.seekTo(0, true);
+            player.playVideo();
+          }
+        } catch {
+          /* noop */
+        }
+      }, 200);
+    }
+
+    function syncPlayer(player: YTPlayer) {
+      const wanted = videoIdRef.current;
       try {
-        const duration = player.getDuration() || 0;
-        const current = player.getCurrentTime() || 0;
-        // Restart just before the end card so Shorts/reels keep looping
-        if (duration > 1 && current >= duration - 0.4) {
-          player.seekTo(0, true);
+        if (mutedRef.current) player.mute();
+        else player.unMute();
+
+        if (!wanted) {
+          player.pauseVideo();
+          activeIdRef.current = null;
+          clearLoopWatch();
+          return;
+        }
+
+        if (activeIdRef.current !== wanted) {
+          activeIdRef.current = wanted;
+          player.loadVideoById({ videoId: wanted, startSeconds: 0 });
+        }
+
+        if (playingRef.current) {
           player.playVideo();
+          startLoopWatch(player);
+        } else {
+          player.pauseVideo();
         }
       } catch {
         /* noop */
       }
-    }, 200);
-  }
-
-  function syncPlayer(player: YTPlayer) {
-    const wanted = videoIdRef.current;
-    try {
-      if (mutedRef.current) player.mute();
-      else player.unMute();
-
-      if (!wanted) {
-        player.pauseVideo();
-        activeIdRef.current = null;
-        clearLoopWatch();
-        return;
-      }
-
-      if (activeIdRef.current !== wanted) {
-        activeIdRef.current = wanted;
-        player.loadVideoById({ videoId: wanted, startSeconds: 0 });
-      }
-
-      if (playingRef.current) {
-        player.playVideo();
-        startLoopWatch(player);
-      } else {
-        player.pauseVideo();
-      }
-    } catch {
-      /* noop */
     }
-  }
 
-  useEffect(() => {
-    let cancelled = false;
+    useImperativeHandle(ref, () => ({
+      seekToFraction(fraction: number) {
+        const player = playerRef.current;
+        if (!readyRef.current || !player || !videoIdRef.current) return;
+        try {
+          const duration = player.getDuration() || 0;
+          if (duration <= 0) return;
+          const t = Math.min(Math.max(fraction, 0), 0.98) * duration;
+          player.seekTo(t, true);
+          if (playingRef.current) player.playVideo();
+        } catch {
+          /* noop */
+        }
+      },
+    }));
 
-    async function mount() {
-      if (!hostRef.current) return;
-      await loadYoutubeApi();
-      if (cancelled || !hostRef.current || !window.YT?.Player) return;
-      if (playerRef.current) return;
+    useEffect(() => {
+      let cancelled = false;
 
-      const mountEl = document.createElement("div");
-      hostRef.current.innerHTML = "";
-      hostRef.current.appendChild(mountEl);
+      async function mount() {
+        if (!hostRef.current) return;
+        await loadYoutubeApi();
+        if (cancelled || !hostRef.current || !window.YT?.Player) return;
+        if (playerRef.current) return;
 
-      const initialId = videoIdRef.current || undefined;
+        const mountEl = document.createElement("div");
+        hostRef.current.innerHTML = "";
+        hostRef.current.appendChild(mountEl);
 
-      playerRef.current = new window.YT.Player(mountEl, {
-        width: "100%",
-        height: "100%",
-        videoId: initialId,
-        playerVars: {
-          autoplay: 0,
-          controls: 0,
-          modestbranding: 1,
-          rel: 0,
-          playsinline: 1,
-          fs: 0,
-          disablekb: 1,
-          iv_load_policy: 3,
-          loop: 1,
-          ...(initialId ? { playlist: initialId } : {}),
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: (e) => {
-            readyRef.current = true;
-            if (videoIdRef.current) activeIdRef.current = videoIdRef.current;
-            syncPlayer(e.target);
+        const initialId = videoIdRef.current || undefined;
+
+        playerRef.current = new window.YT.Player(mountEl, {
+          width: "100%",
+          height: "100%",
+          videoId: initialId,
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+            fs: 0,
+            disablekb: 1,
+            iv_load_policy: 3,
+            loop: 1,
+            ...(initialId ? { playlist: initialId } : {}),
+            origin: window.location.origin,
           },
-          onStateChange: (e) => {
-            if (
-              e.data === window.YT!.PlayerState.ENDED &&
-              playingRef.current &&
-              videoIdRef.current
-            ) {
-              try {
-                e.target.seekTo(0, true);
-                e.target.playVideo();
-              } catch {
-                /* noop */
+          events: {
+            onReady: (e) => {
+              readyRef.current = true;
+              if (videoIdRef.current) activeIdRef.current = videoIdRef.current;
+              syncPlayer(e.target);
+            },
+            onStateChange: (e) => {
+              if (
+                e.data === window.YT!.PlayerState.ENDED &&
+                playingRef.current &&
+                videoIdRef.current
+              ) {
+                try {
+                  e.target.seekTo(0, true);
+                  e.target.playVideo();
+                } catch {
+                  /* noop */
+                }
               }
-            }
-            if (e.data === window.YT!.PlayerState.PLAYING) {
-              startLoopWatch(e.target);
-            }
+              if (e.data === window.YT!.PlayerState.PLAYING) {
+                startLoopWatch(e.target);
+              }
+            },
           },
-        },
-      });
-    }
-
-    void mount();
-
-    return () => {
-      cancelled = true;
-      clearLoopWatch();
-      try {
-        playerRef.current?.destroy();
-      } catch {
-        /* noop */
+        });
       }
-      playerRef.current = null;
-      readyRef.current = false;
-      activeIdRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!readyRef.current || !player) return;
-    syncPlayer(player);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId, playing, muted]);
+      void mount();
 
-  return (
-    <div className={`yt-shell ${className ?? ""} ${videoId ? "has-video" : "is-rest"}`}>
-      <div ref={hostRef} className="yt-host" aria-hidden={!videoId} />
-      {!videoId ? (
-        <div className="yt-empty">
-          <span>{emptyLabel}</span>
-        </div>
-      ) : null}
-    </div>
-  );
-}
+      return () => {
+        cancelled = true;
+        clearLoopWatch();
+        try {
+          playerRef.current?.destroy();
+        } catch {
+          /* noop */
+        }
+        playerRef.current = null;
+        readyRef.current = false;
+        activeIdRef.current = null;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+      const player = playerRef.current;
+      if (!readyRef.current || !player) return;
+      syncPlayer(player);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [videoId, playing, muted]);
+
+    return (
+      <div className={`yt-shell ${className ?? ""} ${videoId ? "has-video" : "is-rest"}`}>
+        <div ref={hostRef} className="yt-host" aria-hidden={!videoId} />
+        {!videoId ? (
+          <div className="yt-empty">
+            <span>{emptyLabel}</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  },
+);

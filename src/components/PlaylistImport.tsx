@@ -4,9 +4,12 @@ import { useState } from "react";
 import type { Interval } from "@/lib/types";
 import { buildPlaylistIntervals } from "@/lib/routine";
 import { extractPlaylistId } from "@/lib/youtube";
+import { NumberField } from "./NumberField";
 
 interface PlaylistImportProps {
   onImport: (payload: { title: string; intervals: Interval[]; videoCount: number }) => void;
+  /** When true, copy stresses that import is optional and replaces only if confirmed. */
+  optional?: boolean;
 }
 
 const PRESETS = [
@@ -15,7 +18,7 @@ const PRESETS = [
   { label: "45/15", work: 45, rest: 15 },
 ] as const;
 
-export function PlaylistImport({ onImport }: PlaylistImportProps) {
+export function PlaylistImport({ onImport, optional = false }: PlaylistImportProps) {
   const [url, setUrl] = useState("");
   const [insertRest, setInsertRest] = useState(true);
   const [workSec, setWorkSec] = useState(20);
@@ -66,7 +69,7 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
       setSuccess(
         `Listo: ${data.videos.length} video${data.videos.length === 1 ? "" : "s"}${
           insertRest ? " con descanso entre medio" : ""
-        }.`,
+        }. Podés renombrar cada ejercicio abajo.`,
       );
       setUrl("");
     } catch (err) {
@@ -79,8 +82,12 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
   return (
     <section id="playlist" className="playlist-card">
       <div className="playlist-card-head">
-        <h2>Desde una playlist</h2>
-        <p>Pegá el link y armo un intervalo por cada video, en el mismo orden. Hasta 50 videos.</p>
+        <h2>{optional ? "Importar playlist" : "Desde una playlist"}</h2>
+        <p>
+          {optional
+            ? "Solo si querés armar o reemplazar los intervalos desde YouTube. No hace falta pegar el link de nuevo para editar lo que ya tenés."
+            : "Pegá el link y armo un intervalo por cada video, en el mismo orden. Hasta 50 videos. Después podés cambiarle el nombre a cada ejercicio."}
+        </p>
       </div>
 
       <label className="field">
@@ -120,12 +127,12 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
       <div className="playlist-options">
         <label className="field compact">
           <span>Segundos de trabajo</span>
-          <input
-            type="number"
+          <NumberField
+            value={workSec}
             min={5}
             max={600}
-            value={workSec}
-            onChange={(e) => setWorkSec(Number(e.target.value) || 20)}
+            fallback={20}
+            onCommit={setWorkSec}
           />
         </label>
         <label className="check-row">
@@ -139,12 +146,12 @@ export function PlaylistImport({ onImport }: PlaylistImportProps) {
         {insertRest ? (
           <label className="field compact">
             <span>Segundos de descanso</span>
-            <input
-              type="number"
+            <NumberField
+              value={restSec}
               min={5}
               max={600}
-              value={restSec}
-              onChange={(e) => setRestSec(Number(e.target.value) || 10)}
+              fallback={10}
+              onCommit={setRestSec}
             />
           </label>
         ) : null}

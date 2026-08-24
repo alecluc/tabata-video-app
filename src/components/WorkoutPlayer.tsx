@@ -3,13 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Routine } from "@/lib/types";
-import { formatClock } from "@/lib/types";
-import { flattenRoutine } from "@/lib/routine";
+import { formatClock, intervalEffectiveDurationSec, totalDurationSec } from "@/lib/types";
+import {
+  bilateralSideLabel,
+  findNextWorkInterval,
+  flattenRoutine,
+  resolveFlatInterval,
+  stepDurationSec,
+} from "@/lib/routine";
 import { beepSecond, progressRatio, remainingSec } from "@/lib/timer";
 import { extractYoutubeId } from "@/lib/youtube";
 import { playBeep, unlockAudio } from "@/lib/audio";
 import { RestAdSlot } from "./RestAdSlot";
-import { YouTubePlayer } from "./YouTubePlayer";
+import { YouTubePlayer, type YouTubePlayerHandle } from "./YouTubePlayer";
 
 interface WorkoutPlayerProps {
   routine: Routine;
@@ -23,11 +29,14 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
 
   const [phase, setPhase] = useState<Phase>("ready");
   const [step, setStep] = useState(0);
-  const [remaining, setRemaining] = useState(routine.intervals[0]?.durationSec ?? 0);
+  const [remaining, setRemaining] = useState(() =>
+    flat[0] ? stepDurationSec(routine, flat[0]) : 0,
+  );
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [elapsed, setElapsed] = useState(0);
 
+  const ytRef = useRef<YouTubePlayerHandle>(null);
   const beepedRef = useRef<Set<number>>(new Set());
   const endsAtRef = useRef(0);
   const pausedLeftRef = useRef(0);
@@ -44,26 +53,39 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
   pausedRef.current = paused;
 
   const current = flat[step];
-  const interval = current ? routine.intervals[current.intervalIndex] : null;
-  const videoId = interval?.youtubeUrl ? extractYoutubeId(interval.youtubeUrl) : null;
+  const interval = current ? resolveFlatInterval(routine, current) : null;
+  const duration = current ? stepDurationSec(routine, current) : 0;
   const nextMeta = flat[step + 1];
-  const nextInterval = nextMeta ? routine.intervals[nextMeta.intervalIndex] : null;
-  const progress = interval ? progressRatio(remaining, interval.durationSec) : 1;
+  const nextInterval = nextMeta ? resolveFlatInterval(routine, nextMeta) : null;
+
+  const nextWork =
+    interval?.kind === "rest" ? findNextWorkInterval(routine, flat, step) : null;
+  const workVideoSource =
+    interval?.kind === "work" ? interval : nextWork;
+  const videoId = workVideoSource?.youtubeUrl
+    ? extractYoutubeId(workVideoSource.youtubeUrl)
+    : null;
+  const previewMuted = interval?.kind === "rest" ? true : muted;
+
+  const progress = duration > 0 ? progressRatio(remaining, duration) : 1;
+  const sideLabel =
+    interval && current
+      ? bilateralSideLabel(interval, current.round, remaining, duration)
+      : null;
 
   const armStep = useCallback(
     (nextStep: number, now = Date.now()) => {
       const meta = flat[nextStep];
-      const next = meta ? routine.intervals[meta.intervalIndex] : null;
-      const duration = next?.durationSec ?? 0;
+      const nextDur = meta ? stepDurationSec(routine, meta) : 0;
       beepedRef.current = new Set();
       advancingRef.current = false;
       completedStepRef.current = null;
-      pausedLeftRef.current = duration;
-      endsAtRef.current = now + duration * 1000;
+      pausedLeftRef.current = nextDur;
+      endsAtRef.current = now + nextDur * 1000;
       setStep(nextStep);
-      setRemaining(duration);
+      setRemaining(nextDur);
     },
-    [flat, routine.intervals],
+    [flat, routine],
   );
 
   useEffect(() => {
@@ -172,7 +194,7 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
       if (phaseRef.current === "done") setPhase("running");
       if (pausedRef.current) {
         const meta = flat[nextStep];
-        const dur = routine.intervals[meta.intervalIndex]?.durationSec ?? 0;
+        const dur = meta ? stepDurationSec(routine, meta) : 0;
         pausedLeftRef.current = dur;
         setStep(nextStep);
         setRemaining(dur);
@@ -181,7 +203,18 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
       }
       armStep(nextStep);
     },
-    [armStep, flat, routine.intervals, totalSteps],
+    [armStep, flat, routine, totalSteps],
+  );
+
+  const seekVideoFromProgress = useCallback(
+    (clientX: number, target: HTMLElement) => {
+      if (!videoId) return;
+      const rect = target.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      ytRef.current?.seekToFraction(ratio);
+    },
+    [videoId],
   );
 
   useEffect(() => {
@@ -243,8 +276,7 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
         <h1>{routine.name}</h1>
         <p className="lede">
           {routine.intervals.length} intervalos · {routine.rounds}{" "}
-          {routine.rounds === 1 ? "ronda" : "rondas"} ·{" "}
-          {formatClock(routine.intervals.reduce((s, i) => s + i.durationSec, 0) * routine.rounds)}{" "}
+          {routine.rounds === 1 ? "ronda" : "rondas"} · {formatClock(totalDurationSec(routine))}{" "}
           total
         </p>
         <ol className="ready-list">
@@ -252,7 +284,15 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
             <li key={item.id}>
               <span>{index + 1}</span>
               <strong>{item.name}</strong>
-              <em>{item.kind === "rest" ? "Descanso" : "Trabajo"} · {item.durationSec}s</em>
+              <em>
+                {item.kind === "rest" ? "Descanso" : "Trabajo"} ·{" "}
+                {intervalEffectiveDurationSec(item)}s
+                {item.laterality === "bilateral"
+                  ? item.bilateralMode === "alternate_rounds"
+                    ? " · L/R por ronda"
+                    : " · L+R"
+                  : ""}
+              </em>
             </li>
           ))}
         </ol>
@@ -297,25 +337,30 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
     <div className={`workout ${paused ? "is-paused" : ""} ${interval.kind}`}>
       <div className="workout-stage">
         <YouTubePlayer
-          videoId={interval.kind === "work" ? videoId : null}
-          playing={!paused}
-          muted={muted}
+          ref={ytRef}
+          videoId={videoId}
+          playing={!paused && Boolean(videoId)}
+          muted={previewMuted}
           emptyLabel={emptyLabel}
           className="workout-video"
         />
-        {interval.kind === "rest" ? <RestAdSlot active={!paused} /> : null}
+        {interval.kind === "rest" ? (
+          <RestAdSlot active={!paused} />
+        ) : null}
         <div className="workout-veil" />
         <div className="workout-hud">
           <div className="workout-top">
             <span>
-              {current.intervalIndex + 1}/{routine.intervals.length} · Ronda {current.round}/
-              {routine.rounds}
+              {current.betweenRounds
+                ? `Entre rondas · Ronda ${current.round}→${current.round + 1}`
+                : `${current.intervalIndex + 1}/${routine.intervals.length} · Ronda ${current.round}/${routine.rounds}`}
             </span>
             <span className={`pill ${interval.kind}`}>{kindLabel}</span>
           </div>
 
           <div className="countdown-block">
             <p className="interval-name">{interval.name}</p>
+            {sideLabel ? <p className="side-label">{sideLabel}</p> : null}
             <p
               className={`countdown ${remaining <= 3 ? "urgent" : ""}`}
               aria-live="assertive"
@@ -324,16 +369,35 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
               {formatClock(remaining)}
             </p>
             <p className="next-up">
-              {nextInterval ? `Próximo: ${nextInterval.name}` : "Último intervalo"}
+              {interval.kind === "rest" && nextWork
+                ? `Prepará: ${nextWork.name}`
+                : nextInterval
+                  ? `Próximo: ${nextInterval.name}`
+                  : "Último intervalo"}
             </p>
           </div>
 
           <div
-            className="progress-track"
-            role="progressbar"
+            className={`progress-track ${videoId ? "is-seekable" : ""}`}
+            role="slider"
+            tabIndex={videoId ? 0 : -1}
+            aria-label={
+              videoId
+                ? "Barra del intervalo — tocá para rebobinar el video"
+                : "Progreso del intervalo"
+            }
             aria-valuemin={0}
-            aria-valuemax={interval.durationSec}
-            aria-valuenow={interval.durationSec - remaining}
+            aria-valuemax={duration}
+            aria-valuenow={duration - remaining}
+            onPointerDown={(e) => {
+              if (!videoId) return;
+              e.currentTarget.setPointerCapture(e.pointerId);
+              seekVideoFromProgress(e.clientX, e.currentTarget);
+            }}
+            onPointerMove={(e) => {
+              if (!videoId || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
+              seekVideoFromProgress(e.clientX, e.currentTarget);
+            }}
           >
             <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
           </div>
@@ -370,8 +434,9 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
               className="icon-btn"
               aria-label={muted ? "Activar sonido" : "Silenciar"}
               onClick={() => setMuted((m) => !m)}
+              disabled={interval.kind === "rest"}
             >
-              {muted ? "🔇" : "🔊"}
+              {previewMuted ? "🔇" : "🔊"}
             </button>
           </div>
 
