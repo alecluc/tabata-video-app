@@ -68,13 +68,17 @@ export function WorkoutPlayer({ routine }: WorkoutPlayerProps) {
 
   const nextWork =
     interval?.kind === "rest" ? findNextWorkInterval(routine, flat, step) : null;
-  const workVideoSource = isPrep ? flat[0] && resolveFlatInterval(routine, flat[0]) : interval?.kind === "work" ? interval : nextWork;
-  const videoId =
-    !isPrep && workVideoSource?.youtubeUrl
-      ? extractYoutubeId(workVideoSource.youtubeUrl)
-      : null;
+  const workVideoSource = isPrep
+    ? findNextWorkInterval(routine, flat, -1) ??
+      (flat[0] ? resolveFlatInterval(routine, flat[0]) : null)
+    : interval?.kind === "work"
+      ? interval
+      : nextWork;
+  const videoId = workVideoSource?.youtubeUrl
+    ? extractYoutubeId(workVideoSource.youtubeUrl)
+    : null;
   const previewMuted = isPrep || interval?.kind === "rest" ? true : muted;
-  const videoPlaying = phase === "running" && !paused && Boolean(videoId);
+  const videoPlaying = (phase === "running" || phase === "prep") && !paused && Boolean(videoId);
 
   const progress = duration > 0 ? progressRatio(remaining, duration) : 1;
   const sideLabel =
