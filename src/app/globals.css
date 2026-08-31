@@ -1009,6 +1009,11 @@ select {
   color: var(--rest);
 }
 
+.pill.prep {
+  background: rgba(200, 245, 66, 0.16);
+  color: var(--accent);
+}
+
 .countdown-block {
   text-align: center;
   margin-top: auto;
@@ -1125,6 +1130,30 @@ select {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.22) inset,
     0 10px 28px rgba(200, 245, 66, 0.28);
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+}
+
+.volume-step {
+  width: 44px;
+  height: 44px;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.volume-slider {
+  width: min(7rem, 22vw);
+  min-width: 4.5rem;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  background: transparent;
 }
 
 .next-up {

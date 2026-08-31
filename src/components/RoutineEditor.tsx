@@ -9,6 +9,7 @@ import {
   createId,
   emptyInterval,
   formatClock,
+  prepSecDefault,
   totalDurationSec,
 } from "@/lib/types";
 import { getRoutine } from "@/lib/storage";
@@ -41,6 +42,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
       setRoutine({
         ...existing,
         betweenRoundsRestSec: betweenRoundsRestDefault(existing),
+        prepSec: prepSecDefault(existing),
       });
       setPlaylistOpen(false);
       return;
@@ -51,6 +53,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
       name: "Nueva rutina",
       rounds: 1,
       betweenRoundsRestSec: 10,
+      prepSec: 10,
       intervals: [emptyInterval("work"), emptyInterval("rest")],
       createdAt: now,
       updatedAt: now,
@@ -137,6 +140,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
       name: current.name.trim() || "Sin nombre",
       rounds: Math.max(1, Math.min(20, Number(current.rounds) || 1)),
       betweenRoundsRestSec: betweenRoundsRestDefault(current),
+      prepSec: prepSecDefault(current),
       intervals: current.intervals.map((i) => {
         const laterality: Laterality | undefined =
           i.kind === "work" ? i.laterality ?? "single" : undefined;
@@ -223,6 +227,16 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
             onCommit={(betweenRoundsRestSec) =>
               setRoutine({ ...routine, betweenRoundsRestSec })
             }
+          />
+        </label>
+        <label className="field rounds">
+          <span>Preparate antes de empezar (s)</span>
+          <NumberField
+            value={prepSecDefault(routine)}
+            min={0}
+            max={120}
+            fallback={10}
+            onCommit={(prepSec) => setRoutine({ ...routine, prepSec })}
           />
         </label>
         <p className="editor-meta">
@@ -423,7 +437,7 @@ export function RoutineEditor({ routineId }: RoutineEditorProps) {
                           }
                         >
                           <option value="double_time">
-                            Duplicar el tiempo (Der → Izq en el mismo intervalo)
+                            Derecha e izquierda (mitad + 5s entre lados)
                           </option>
                           <option value="alternate_rounds">
                             Ronda impar derecha, ronda par izquierda

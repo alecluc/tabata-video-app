@@ -43,6 +43,7 @@ interface YouTubePlayerProps {
   videoId: string | null;
   playing: boolean;
   muted: boolean;
+  volume?: number;
   emptyLabel?: string;
   className?: string;
 }
@@ -54,7 +55,7 @@ interface YouTubePlayerProps {
  */
 export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
   function YouTubePlayer(
-    { videoId, playing, muted, emptyLabel = "Descanso", className },
+    { videoId, playing, muted, volume = 100, emptyLabel = "Descanso", className },
     ref,
   ) {
     const hostRef = useRef<HTMLDivElement>(null);
@@ -63,11 +64,13 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     const activeIdRef = useRef<string | null>(null);
     const playingRef = useRef(playing);
     const mutedRef = useRef(muted);
+    const volumeRef = useRef(volume);
     const videoIdRef = useRef(videoId);
     const loopWatchRef = useRef<number | null>(null);
 
     playingRef.current = playing;
     mutedRef.current = muted;
+    volumeRef.current = volume;
     videoIdRef.current = videoId;
 
     function clearLoopWatch() {
@@ -98,8 +101,12 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     function syncPlayer(player: YTPlayer) {
       const wanted = videoIdRef.current;
       try {
-        if (mutedRef.current) player.mute();
-        else player.unMute();
+        if (mutedRef.current) {
+          player.mute();
+        } else {
+          player.unMute();
+          player.setVolume(volumeRef.current);
+        }
 
         if (!wanted) {
           player.pauseVideo();
@@ -221,7 +228,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       if (!readyRef.current || !player) return;
       syncPlayer(player);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [videoId, playing, muted]);
+    }, [videoId, playing, muted, volume]);
 
     return (
       <div className={`yt-shell ${className ?? ""} ${videoId ? "has-video" : "is-rest"}`}>

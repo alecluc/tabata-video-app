@@ -5,7 +5,7 @@ export type Laterality = "single" | "bilateral";
 
 /**
  * How bilateral work is scheduled:
- * - double_time: configured duration ×2 so both sides fit in one interval
+ * - double_time: D/2 per side + 5s pause between (total D + 5s)
  * - alternate_rounds: odd rounds = right, even = left
  */
 export type BilateralMode = "double_time" | "alternate_rounds";
@@ -33,6 +33,8 @@ export interface Routine {
    * end with a rest. Defaults to 10 when omitted.
    */
   betweenRoundsRestSec?: number;
+  /** Countdown before the first work interval. Defaults to 10 when omitted. */
+  prepSec?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -70,6 +72,7 @@ export function emptyRoutine(name = "Nueva rutina"): Routine {
     name,
     rounds: 1,
     betweenRoundsRestSec: 10,
+    prepSec: 10,
     intervals: [
       emptyInterval("work"),
       emptyInterval("rest"),
@@ -80,6 +83,9 @@ export function emptyRoutine(name = "Nueva rutina"): Routine {
   };
 }
 
+/** Pause between bilateral halves in double_time mode. */
+export const BILATERAL_SIDE_PAUSE_SEC = 5;
+
 /** Duration of one work/rest row as written (before rounds / between-round inject). */
 export function intervalEffectiveDurationSec(interval: Interval): number {
   if (
@@ -87,7 +93,7 @@ export function intervalEffectiveDurationSec(interval: Interval): number {
     interval.laterality === "bilateral" &&
     interval.bilateralMode === "double_time"
   ) {
-    return interval.durationSec * 2;
+    return interval.durationSec + BILATERAL_SIDE_PAUSE_SEC;
   }
   return interval.durationSec;
 }
@@ -100,6 +106,14 @@ export function betweenRoundsRestDefault(routine: Pick<Routine, "betweenRoundsRe
   return Math.max(0, Math.min(600, Math.round(num)));
 }
 
+export function prepSecDefault(routine: Pick<Routine, "prepSec">): number {
+  const n = routine.prepSec;
+  if (n === undefined || n === null) return 10;
+  const num = Number(n);
+  if (!Number.isFinite(num)) return 10;
+  return Math.max(0, Math.min(120, Math.round(num)));
+}
+
 export function totalDurationSec(routine: Routine): number {
   const block = routine.intervals.reduce((sum, i) => sum + intervalEffectiveDurationSec(i), 0);
   const rounds = Math.max(1, routine.rounds);
@@ -108,7 +122,7 @@ export function totalDurationSec(routine: Routine): number {
   const betweenSec = betweenRoundsRestDefault(routine);
   const betweenTotal =
     rounds > 1 && !lastIsRest && betweenSec > 0 ? betweenSec * (rounds - 1) : 0;
-  return block * rounds + betweenTotal;
+  return prepSecDefault(routine) + block * rounds + betweenTotal;
 }
 
 export function formatClock(totalSec: number): string {

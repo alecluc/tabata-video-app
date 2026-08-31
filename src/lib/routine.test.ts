@@ -9,7 +9,12 @@ import {
   stepDurationSec,
 } from "./routine";
 import type { Interval, Routine } from "./types";
-import { intervalEffectiveDurationSec, totalDurationSec } from "./types";
+import {
+  BILATERAL_SIDE_PAUSE_SEC,
+  intervalEffectiveDurationSec,
+  prepSecDefault,
+  totalDurationSec,
+} from "./types";
 
 test("inserts rest between videos but not after the last", () => {
   const intervals = buildPlaylistIntervals(
@@ -82,7 +87,7 @@ test("injects between-round rest when block does not end with rest", () => {
   assert.equal(mid.kind, "rest");
   assert.equal(mid.durationSec, 15);
   assert.equal(mid.name, "Entre rondas");
-  assert.equal(totalDurationSec(routine), 20 + 20 + 15 + 20 + 20);
+  assert.equal(totalDurationSec(routine), 10 + 20 + 20 + 15 + 20 + 20);
 });
 
 test("does not inject between-round rest when last interval is rest", () => {
@@ -121,7 +126,7 @@ test("finds next work video across rest and between-round steps", () => {
   assert.equal(findNextWorkInterval(routine, flat, flat.length - 1), null);
 });
 
-test("double_time doubles effective duration; alternate keeps base", () => {
+test("double_time splits into halves with 5s pause; alternate keeps base", () => {
   const double: Interval = {
     id: "1",
     name: "Curl",
@@ -135,19 +140,60 @@ test("double_time doubles effective duration; alternate keeps base", () => {
     ...double,
     bilateralMode: "alternate_rounds",
   };
-  assert.equal(intervalEffectiveDurationSec(double), 40);
+  assert.equal(intervalEffectiveDurationSec(double), 25);
   assert.equal(intervalEffectiveDurationSec(alt), 20);
-  assert.equal(bilateralSideLabel(alt, 1, 10, 20), "Derecha");
-  assert.equal(bilateralSideLabel(alt, 2, 10, 20), "Izquierda");
-  assert.equal(bilateralSideLabel(double, 1, 35, 40), "Derecha");
-  assert.equal(bilateralSideLabel(double, 1, 10, 40), "Izquierda");
+  assert.equal(bilateralSideLabel(alt, { round: 1, intervalIndex: 0 }), "Derecha");
+  assert.equal(bilateralSideLabel(alt, { round: 2, intervalIndex: 0 }), "Izquierda");
+  assert.equal(
+    bilateralSideLabel(double, { round: 1, intervalIndex: 0, bilateralHalf: "first" }),
+    "Derecha",
+  );
+  assert.equal(
+    bilateralSideLabel(double, { round: 1, intervalIndex: 0, bilateralHalf: "second" }),
+    "Izquierda",
+  );
 });
 
-test("stepDurationSec uses effective duration for work steps", () => {
+test("flattens bilateral double_time into three steps per interval", () => {
   const routine = {
     id: "r",
     name: "x",
     rounds: 1,
+    prepSec: 0,
+    createdAt: "",
+    updatedAt: "",
+    intervals: [
+      {
+        id: "a",
+        name: "Curl",
+        kind: "work",
+        durationSec: 20,
+        youtubeUrl: "",
+        laterality: "bilateral",
+        bilateralMode: "double_time",
+      },
+    ],
+  } satisfies Routine;
+  const flat = flattenRoutine(routine);
+  assert.deepEqual(flat, [
+    { round: 1, intervalIndex: 0, bilateralHalf: "first" },
+    { round: 1, intervalIndex: 0, betweenSides: true },
+    { round: 1, intervalIndex: 0, bilateralHalf: "second" },
+  ]);
+  assert.equal(stepDurationSec(routine, flat[0]), 10);
+  assert.equal(stepDurationSec(routine, flat[1]), BILATERAL_SIDE_PAUSE_SEC);
+  assert.equal(stepDurationSec(routine, flat[2]), 10);
+  const pause = resolveFlatInterval(routine, flat[1]);
+  assert.equal(pause.kind, "rest");
+  assert.equal(pause.name, "Cambio de lado");
+});
+
+test("stepDurationSec uses effective duration for non-bilateral work steps", () => {
+  const routine = {
+    id: "r",
+    name: "x",
+    rounds: 1,
+    prepSec: 0,
     createdAt: "",
     updatedAt: "",
     intervals: [
@@ -157,10 +203,25 @@ test("stepDurationSec uses effective duration for work steps", () => {
         kind: "work",
         durationSec: 20,
         youtubeUrl: "",
-        laterality: "bilateral",
-        bilateralMode: "double_time",
       },
     ],
   } satisfies Routine;
-  assert.equal(stepDurationSec(routine, { round: 1, intervalIndex: 0 }), 40);
+  assert.equal(stepDurationSec(routine, { round: 1, intervalIndex: 0 }), 20);
+});
+
+test("prepSecDefault and totalDurationSec include prep", () => {
+  const routine = {
+    id: "r",
+    name: "x",
+    rounds: 1,
+    prepSec: 15,
+    createdAt: "",
+    updatedAt: "",
+    intervals: [
+      { id: "a", name: "A", kind: "work", durationSec: 20, youtubeUrl: "" },
+    ],
+  } satisfies Routine;
+  assert.equal(prepSecDefault(routine), 15);
+  assert.equal(prepSecDefault({}), 10);
+  assert.equal(totalDurationSec(routine), 15 + 20);
 });
